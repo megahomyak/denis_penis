@@ -5,13 +5,14 @@ from types import SimpleNamespace as SN
 VK_TOKEN = open("vk_token").read().strip()
 GROQ_TOKEN = open("groq_token").read().strip()
 
-class Config:
-    MAX_POST_OFFSET = 10
-    MAX_POST_COUNT = 10
-    ROOT_GROUP = "rusanimefest"
-    LLM_MAX_QUERIES = 50
-    REDOWNLOAD = False
-    MODEL_NAME = "mixtral-8x7b-32768" # May be "llama-3.3-70b-versatile"
+CONFIG = SN(
+    MAX_POST_OFFSET = 10,
+    MAX_POST_COUNT = 10,
+    ROOT_GROUP = "rusanimefest",
+    LLM_MAX_QUERIES = 50,
+    REDOWNLOAD = False,
+    MODEL_NAME = "mixtral-8x7b-32768", # May be "llama-3.3-70b-versatile"
+)
 
 groq = Groq(api_key=GROQ_TOKEN)
 
@@ -25,7 +26,7 @@ def vk_request(method, **params):
 
 def ask_llm(s):
     completion = groq.chat.completions.create(
-        model="mixtral-8x7b-32768",
+        model=CONFIG.MODEL_NAME,
         messages=[
             {
                 "role": "user",
@@ -42,7 +43,7 @@ def get_posts(group_domain):
     posts = {}
     offset = 0
     while True:
-        resp = vk_request("wall.get", domain=group_domain, count=Config.MAX_POST_COUNT, offset=offset)
+        resp = vk_request("wall.get", domain=group_domain, count=CONFIG.MAX_POST_COUNT, offset=offset)
         if resp["count"] == 0:
             break
         for item in resp["items"]:
@@ -51,12 +52,12 @@ def get_posts(group_domain):
         if not resp["next_from"]:
             break
         offset = int(resp["next_from"])
-        if offset >= Config.MAX_POST_OFFSET:
+        if offset >= CONFIG.MAX_POST_OFFSET:
             break
     return posts
 
 def download_posts():
-    main_group_posts = get_posts(Config.ROOT_GROUP)
+    main_group_posts = get_posts(CONFIG.ROOT_GROUP)
     groups_to_ask_about = set()
     for post_text in main_group_posts.values():
         page_re_groups = re.findall(r"vk.com/([\w.]+)|@([\w.]+)|\[([\w.]+)\|[^\]+]\]", post_text)
@@ -91,7 +92,7 @@ def save_categories(categories):
         f.write("\n\n")
 
 def main():
-    if Config.REDOWNLOAD:
+    if CONFIG.REDOWNLOAD:
         download_posts()
 
     posts = json.load(open("posts.json"))
@@ -114,7 +115,7 @@ def main():
             break
         categories.setdefault(llm_response.strip(), []).append(SN(link=post_link, text=post_text))
         llm_queries_amount += 1
-        if llm_queries_amount == Config.LLM_MAX_QUERIES:
+        if llm_queries_amount == CONFIG.LLM_MAX_QUERIES:
             break
     save_categories(categories)
 
