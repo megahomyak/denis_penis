@@ -84,10 +84,11 @@ def download_posts():
 def save_categories(categories):
     f = open("categories.txt", "w", encoding="utf-8")
     for category_name, posts in categories.items():
-        f.write(f"\n\n===== {category_name} =====\n\n")
+        f.write(f"===== {category_name} =====\n\n")
         for post in posts:
             f.write(f"***** {post.link} *****\n\n")
             f.write(f"{post.text}\n\n")
+        f.write("\n\n")
 
 def main():
     if Config.REDOWNLOAD:
